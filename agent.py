@@ -25,24 +25,40 @@ class Agent:
 
     # At the end of training save the trained model
     def save_model(self,model_path):
-        utils.save(model_path, self.Q)
+        utils.save(model_path+'_Q.npy', self.Q)
+        utils.save(model_path+'_N.npy', self.N)
 
     # Load the trained model for evaluation
     def load_model(self,model_path):
-        self.Q = utils.load(model_path)
+        self.Q = utils.load(model_path+'_Q.npy')
+        self.N = utils.load(model_path+'_N.npy')
 
     def reset(self):
         self.points = 0
         self.s = None
         self.a = None
 
-    def act(self, state, points, dead):
+    def act(self, state, points, dead, opponent="False"):
         '''
         :param state: a list of [snake_head_x, snake_head_y, snake_body, food_x, food_y] from environment.
         :param points: float, the current points from environment
         :param dead: boolean, if the snake is dead
         :return: the index of action. 0,1,2,3 indicates up,down,left,right separately
         '''
+        state_old = state
+        state = []
+        if opponent==False:
+            state.append(state_old[0])
+            state.append(state_old[1])
+            state.append(state_old[4])
+            state.append(state_old[6])
+            state.append(state_old[7])
+        else:
+            state.append(state_old[2])
+            state.append(state_old[3])
+            state.append(state_old[5])
+            state.append(state_old[6])
+            state.append(state_old[7])
         if self.a == None:
             self.s = self.discretize(state)
             self.a = self.actions[-1]

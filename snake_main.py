@@ -10,88 +10,96 @@ import time
 class Application:
     def __init__(self, args):
         self.args = args
-        self.env = SnakeEnv(args.snake_head_x, args.snake_head_y, args.food_x, args.food_y)
+        self.env = SnakeEnv(args.snake_head_x, args.snake_head_y, 
+                            args.snake_head_x+100, args.snake_head_y+50,
+                            args.food_x, args.food_y)
         self.agent = Agent(self.env.get_actions(), args.Ne, args.C, args.gamma)
+        self.opponent = Agent(self.env.get_actions(), args.Ne, args.C, args.gamma)
         
     def execute(self):
-        if not self.args.human:
-            if self.args.train_eps != 0:
-                self.train()
-            self.test()
+        # if not self.args.human:
+        #     if self.args.train_eps != 0:
+        #         self.train()
+        # #     self.test()
         self.show_games()
 
-    def train(self):
-        print("Train Phase:")
-        self.agent.train()
-        window = self.args.window
-        self.points_results = []
-        first_eat = True
-        start = time.time()
+    # def train(self):
+    #     print("Train Phase:")
+    #     self.agent.train()
+    #     window = self.args.window
+    #     self.points_results = []
+    #     first_eat = True
+    #     start = time.time()
 
-        for game in range(1, self.args.train_eps + 1):
-            state = self.env.get_state()
-            dead = False
-            action = self.agent.act(state, 0, dead)
-            while not dead:
-                state, points, dead = self.env.step(action)
+    #     for game in range(1, self.args.train_eps + 1):
+    #         state = self.env.get_state()
+    #         dead = False
+    #         action = self.agent.act(state, 0, dead)
+    #         while not dead:
+    #             state, points, dead = self.env.step(action)
 
-                # For debug convenience, you can check if your Q-table mathches ours for given setting of parameters
-                # (see Debug Convenience part on homework 4 web page)
-                if first_eat and points == 1:
-                    self.agent.save_model(utils.CHECKPOINT)
-                    first_eat = False
+    #             # # For debug convenience, you can check if your Q-table mathches ours for given setting of parameters
+    #             # # (see Debug Convenience part on homework 4 web page)
+    #             # if first_eat and points == 1:
+    #             #     self.agent.save_model(utils.CHECKPOINT)
+    #             #     first_eat = False
 
-                action = self.agent.act(state, points, dead)
+    #             action = self.agent.act(state, points, dead)
 
     
-            points = self.env.get_points()
-            self.points_results.append(points)
-            if game % self.args.window == 0:
-                print(
-                    "Games:", len(self.points_results) - window, "-", len(self.points_results), 
-                    "Points (Average:", sum(self.points_results[-window:])/window,
-                    "Max:", max(self.points_results[-window:]),
-                    "Min:", min(self.points_results[-window:]),")",
-                )
-            self.env.reset()
-        print("Training takes", time.time() - start, "seconds")
-        self.agent.save_model(self.args.model_name)
+    #         # points = self.env.get_points()
+    #         # self.points_results.append(points)
+    #         # if game % self.args.window == 0:
+    #         #     print(
+    #         #         "Games:", len(self.points_results) - window, "-", len(self.points_results), 
+    #         #         "Points (Average:", sum(self.points_results[-window:])/window,
+    #         #         "Max:", max(self.points_results[-window:]),
+    #         #         "Min:", min(self.points_results[-window:]),")",
+    #         #     )
+    #         self.env.reset()
+    #     print("Training takes", time.time() - start, "seconds")
+    #     self.agent.save_model(self.args.model_name)
 
-    def test(self):
-        print("Test Phase:")
-        self.agent.eval()
-        self.agent.load_model(self.args.model_name)
-        points_results = []
-        start = time.time()
+    # def test(self):
+    #     print("Test Phase:")
+    #     self.agent.eval()
+    #     self.agent.load_model(self.args.model_name)
+    #     points_results = []
+    #     start = time.time()
 
-        for game in range(1, self.args.test_eps + 1):
-            state = self.env.get_state()
-            dead = False
-            action = self.agent.act(state, 0, dead)
-            while not dead:
-                state, points, dead = self.env.step(action)
-                action = self.agent.act(state, points, dead)
-            points = self.env.get_points()
-            points_results.append(points)
-            self.env.reset()
+    #     for game in range(1, self.args.test_eps + 1):
+    #         state = self.env.get_state()
+    #         dead = False
+    #         action = self.agent.act(state, 0, dead)
+    #         while not dead:
+    #             state, points, dead = self.env.step(action)
+    #             action = self.agent.act(state, points, dead)
+    #         points = self.env.get_points()
+    #         points_results.append(points)
+    #         self.env.reset()
 
-        print("Testing takes", time.time() - start, "seconds")
-        print("Number of Games:", len(points_results))
-        print("Average Points:", sum(points_results)/len(points_results))
-        print("Max Points:", max(points_results))
-        print("Min Points:", min(points_results))
+    #     print("Testing takes", time.time() - start, "seconds")
+    #     print("Number of Games:", len(points_results))
+    #     print("Average Points:", sum(points_results)/len(points_results))
+    #     print("Max Points:", max(points_results))
+    #     print("Min Points:", min(points_results))
 
     def show_games(self):
         print("Display Games")
         self.env.display()
         pygame.event.pump()
         self.agent.eval()
+        self.opponent.eval()
+        self.agent.load_model('q_agent.npy')
+        self.opponent.load_model('q_agent.npy')
         points_results = []
         end = False
+        # self.env.reset()
         for game in range(1, self.args.show_eps + 1):
             state = self.env.get_state()
             dead = False
-            action = self.agent.act(state, 0, dead)
+            action1 = self.agent.act(state, 0, dead)
+            action2 = self.opponent.act(state, 0, dead)
             count = 0
             while not dead:
                 count +=1
@@ -100,22 +108,24 @@ class Application:
                 if keys[K_ESCAPE] or self.check_quit():
                     end = True
                     break
-                state, points, dead = self.env.step(action)
+                state, points, dead = self.env.step(action1, action2)
                 # Qlearning agent
                 if not self.args.human:
-                    action = self.agent.act(state, points, dead)
+                    action1 = self.agent.act(state, points, dead)
+                    action2 = self.opponent.act(state, points, dead)
                 # for human player
                 else:
-                    for event in pygame.event.get():
-                        if event.type == pygame.KEYDOWN:
-                            if event.key == pygame.K_UP:
-                                action = 0
-                            elif event.key == pygame.K_DOWN:
-                                action = 1
-                            elif event.key == pygame.K_LEFT:
-                                action = 2
-                            elif event.key == pygame.K_RIGHT:
-                                action = 3
+                    assert ValueError("Not support human control")
+                    # for event in pygame.event.get():
+                    #     if event.type == pygame.KEYDOWN:
+                    #         if event.key == pygame.K_UP:
+                    #             action = 0
+                    #         elif event.key == pygame.K_DOWN:
+                    #             action = 1
+                    #         elif event.key == pygame.K_LEFT:
+                    #             action = 2
+                    #         elif event.key == pygame.K_RIGHT:
+                    #             action = 3
             if end:
                 break
             self.env.reset()
